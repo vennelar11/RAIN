@@ -49,5 +49,4 @@ Built from zero prior AWS experience in roughly 5 hours during a hackathon — t
 
 ---
 
-Built by [Vennela R](https://github.com/vennelar11)
-More about the genuine experience at https://medium.com/@vennelareddyvari.11
+Built by [Vennela R](https://github.com/vennelar11) · [Medium](https://medium.com/@vennelareddyvari.11)
