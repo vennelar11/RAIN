@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAIN — Telemedicine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --mist:#eef3f5;
+    --paper:#f8fafb;
+    --deep:#1c4b52;
+    --teal:#3f7d84;
+    --ink:#233234;
+    --line: rgba(28,75,82,0.18);
+    --muted: #5c6e71;
+    --panel: #ffffff;
+    --btn-bg: #1c4b52;
+    --btn-bg-hover: #3f7d84;
+    --btn-text: #ffffff;
+    --ok-bg: #e7eff0;
+    --ok-text: #1c4b52;
+    --err-bg: #f7eae7;
+    --err-text: #8a3a22;
+  }
+  [data-theme="dark"]{
+    --mist:#161d1f;
+    --paper:#1b2325;
+    --deep:#dfeff0;
+    --teal:#7fb8bd;
+    --ink:#e6edee;
+    --line: rgba(223,239,240,0.15);
+    --muted: #9fb0b2;
+    --panel: #22292b;
+    --btn-bg: #3f8f96;
+    --btn-bg-hover: #58a8ae;
+    --btn-text: #0f1718;
+    --ok-bg: rgba(127,184,189,0.14);
+    --ok-text: #cdeaec;
+    --err-bg: rgba(224,120,86,0.14);
+    --err-text: #f0b39d;
+  }
+  body{ transition: background 0.3s ease, color 0.3s ease; }
+  .card, input, select, textarea{ transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--mist);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    overflow-x:hidden;
+  }
+
+  .rain{
+    position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.35;
+  }
+  .drop{
+    position:absolute; top:-10%; width:1px; height:60px;
+    background:linear-gradient(to bottom, transparent, var(--teal));
+    animation:fall linear infinite;
+  }
+  @keyframes fall{ to{ transform:translateY(120vh); } }
+
+  .screen{
+    position:relative; z-index:1;
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding:32px;
+  }
+
+  .wordmark{
+    font-family:'Fraunces', serif;
+    font-weight:300;
+    font-size:clamp(64px, 14vw, 128px);
+    letter-spacing:0.04em;
+    color:var(--deep);
+    margin:0;
+    line-height:1;
+  }
+
+  .quote{
+    margin-top:20px;
+    max-width:480px;
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:400;
+    font-size:clamp(16px, 2.4vw, 19px);
+    color:var(--teal);
+    line-height:1.6;
+  }
+
+  .quote span{
+    display:block;
+    margin-top:8px;
+    font-family:'Inter', sans-serif;
+    font-style:normal;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--ink);
+    opacity:0.5;
+  }
+
+  .lines-btn{
+    margin-top:56px;
+    background:none; border:none; cursor:pointer;
+    display:flex; flex-direction:column; gap:6px;
+    padding:14px;
+  }
+  .lines-btn span{
+    width:38px; height:2px; background:var(--deep);
+    transition: all .35s ease;
+  }
+  .lines-btn:hover span{ background:var(--teal); }
+  .lines-btn.open span:nth-child(1){ transform:translateY(8px) rotate(45deg); }
+  .lines-btn.open span:nth-child(2){ opacity:0; }
+  .lines-btn.open span:nth-child(3){ transform:translateY(-8px) rotate(-45deg); }
+
+  .scroll-hint{
+    margin-top:14px;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink);
+    opacity:0.35;
+  }
+
+  .menu{
+    position:relative; z-index:1;
+    max-width:640px;
+    margin:0 auto;
+    padding:0 32px 40px;
+  }
+
+  .menu ul{
+    list-style:none; margin:0; padding:0;
+    border-top:1px solid var(--line);
+  }
+  .menu li{
+    border-bottom:1px solid var(--line);
+  }
+  .menu a{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 4px;
+    text-decoration:none;
+    color:var(--ink);
+    font-size:18px;
+    letter-spacing:0.01em;
+    transition:color .25s ease, padding-left .25s ease;
+    cursor:pointer;
+  }
+  .menu a:hover, .menu a.active{
+    color:var(--deep);
+    padding-left:10px;
+  }
+  .menu a .arrow{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    color:var(--teal);
+    opacity:0;
+    transition:opacity .25s ease;
+  }
+  .menu a:hover .arrow, .menu a.active .arrow{ opacity:1; }
+
+  /* ---- functional panels ---- */
+  .workspace{
+    position:relative; z-index:1;
+    max-width:640px;
+    margin:0 auto;
+    padding:0 32px 100px;
+  }
+
+  .panel{
+    display:none;
+    padding-top:8px;
+  }
+  .panel.active{
+    display:block;
+    animation:rise .4s ease;
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .eyebrow{
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    font-size:11px;
+    color:var(--teal);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+
+  .panel h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:28px;
+    margin:0 0 8px;
+    color:var(--deep);
+  }
+
+  .panel .sub{
+    color:var(--muted);
+    font-size:14.5px;
+    margin:0 0 26px;
+    line-height:1.5;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:28px;
+  }
+
+  label{
+    display:block;
+    font-size:12.5px;
+    color:var(--deep);
+    margin:0 0 6px;
+    font-weight:600;
+    letter-spacing:0.02em;
+  }
+
+  .field{ margin-bottom:18px; }
+
+  input[type=text], input[type=email], input[type=tel], input[type=date], select, textarea{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    padding:11px 13px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--paper);
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--teal); }
+  textarea{ resize:vertical; min-height:80px; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:520px){ .grid2{ grid-template-columns:1fr; } }
+
+  .btn{
+    font-family:'Inter', sans-serif;
+    background:var(--btn-bg);
+    color:var(--btn-text);
+    border:none;
+    padding:12px 22px;
+    border-radius:8px;
+    font-size:14.5px;
+    font-weight:600;
+    cursor:pointer;
+    margin-top:6px;
+    transition:background .15s;
+  }
+  .btn:hover{ background:var(--btn-bg-hover); }
+
+  .result{
+    margin-top:18px;
+    padding:14px 16px;
+    border-radius:8px;
+    font-size:14px;
+    display:none;
+  }
+  .result.show{ display:block; }
+  .result.ok{
+    background:var(--ok-bg);
+    border:1px solid var(--line);
+    color:var(--ok-text);
+  }
+  .result.err{
+    background:var(--err-bg);
+    border:1px solid var(--line);
+    color:var(--err-text);
+  }
+  .result code{
+    display:block;
+    margin-top:8px;
+    font-size:12.5px;
+    word-break:break-all;
+    color:inherit;
+    opacity:0.85;
+  }
+
+  .file-drop{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:22px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    cursor:pointer;
+    transition:border-color .15s;
+  }
+  .file-drop:hover{ border-color:var(--teal); }
+  .file-drop.has-file{ border-style:solid; border-color:var(--teal); color:var(--deep); }
+  input[type=file]{ display:none; }
+
+  .theme-toggle{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    z-index:2;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--ink);
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: background 0.3s ease, transform 0.15s ease;
+  }
+  .theme-toggle:hover{ transform: scale(1.06); }
+
+  .consult-box{
+    text-align:center;
+    padding:20px 0;
+  }
+  .consult-box p{ color:var(--muted); font-size:14px; margin-bottom:20px; }
+
+  footer{
+    position:relative; z-index:1;
+    text-align:center;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink);
+    opacity:0.4;
+    padding-bottom:28px;
+  }
+</style>
+</head>
+<body>
+
+<div class="rain" id="rain"></div>
+
+<div class="screen">
+  <h1 class="wordmark">RAIN</h1>
+  <p class="quote">
+    "Healing, like rain, should reach everyone —
+    quietly, gently, without delay."
+    <span>Cloud-based care, close at hand</span>
+  </p>
+
+  <button class="lines-btn open" id="menuBtn" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="scroll-hint" id="scrollHint" style="cursor:pointer;">scroll or tap to begin</div>
+</div>
+
+<nav class="menu" id="menu">
+  <ul>
+    <li><a data-target="patients"><span>Register</span><span class="arrow">→</span></a></li>
+    <li><a data-target="history"><span>View my history</span><span class="arrow">→</span></a></li>
+    <li><a data-target="symptoms"><span>Check symptoms</span><span class="arrow">→</span></a></li>
+    <li><a data-target="appointments"><span>Book an appointment</span><span class="arrow">→</span></a></li>
+    <li><a data-target="consult"><span>Consult a doctor</span><span class="arrow">→</span></a></li>
+    <li><a data-target="reports"><span>Upload medical reports</span><span class="arrow">→</span></a></li>
+    <li><a data-target="prescriptions"><span>Digital prescriptions</span><span class="arrow">→</span></a></li>
+  </ul>
+</nav>
+
+<div class="workspace" id="workspace">
+
+  <!-- REGISTER -->
+  <section class="panel" id="patients">
+    <div class="eyebrow">Step 1</div>
+    <h2>Register as a patient</h2>
+    <p class="sub">Create your record once — you'll use your Patient ID to book visits and upload reports.</p>
+    <div class="card">
+      <div class="field">
+        <label for="p-name">Full name</label>
+        <input type="text" id="p-name" placeholder="e.g. Vennela Reddy">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="p-email">Email</label>
+          <input type="email" id="p-email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="p-phone">Phone</label>
+          <input type="tel" id="p-phone" placeholder="10-digit number">
+        </div>
+      </div>
+      <button class="btn" onclick="registerPatient()">Register patient</button>
+      <div class="result" id="p-result"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="panel" id="history">
+    <div class="eyebrow">Step 2</div>
+    <h2>Your medical history</h2>
+    <p class="sub">Enter your Patient ID to see your past appointments and uploaded reports.</p>
+    <div class="card">
+      <div class="field">
+        <label for="h-patient-id">Patient ID</label>
+        <input type="text" id="h-patient-id" placeholder="paste your patient-id here" autocomplete="off">
+      </div>
+      <button class="btn" onclick="loadHistory()">View history</button>
+      <div class="result" id="h-result"></div>
+      <div id="h-list" style="margin-top:20px;"></div>
+    </div>
+  </section>
+
+  <!-- SYMPTOM CHECK -->
+  <section class="panel" id="symptoms">
+    <div class="eyebrow">Step 3</div>
+    <h2>Not sure who to see?</h2>
+    <p class="sub">Describe how you're feeling, and we'll suggest a specialist to book with.</p>
+    <div class="card">
+      <div class="field">
+        <label for="s-symptoms">Describe your symptoms</label>
+        <textarea id="s-symptoms" placeholder="e.g. chest pain and shortness of breath"></textarea>
+      </div>
+      <button class="btn" onclick="checkSymptoms()">Suggest a specialist</button>
+      <div class="result" id="s-result"></div>
+    </div>
+  </section>
+
+  <!-- APPOINTMENT -->
+  <section class="panel" id="appointments">
+    <div class="eyebrow">Step 4</div>
+    <h2>Book an appointment</h2>
+    <p class="sub">Enter the Patient ID you received after registering.</p>
+    <div class="card">
+      <div class="field">
+        <label for="a-patient-id">Patient ID</label>
+        <input type="text" id="a-patient-id" placeholder="paste your patient-id here" autocomplete="off">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="a-doctor">Doctor</label>
+          <select id="a-doctor">
+            <option value="Dr. Aarav Shetty">Dr. Aarav Shetty</option>
+            <option value="Dr. Amaira Sharma">Dr. Amaira Sharma</option>
+            <option value="Dr. Siddharth Reddy">Dr. Siddharth Reddy</option>
+            <option value="Dr. Agasthya Patil">Dr. Agasthya Patil</option>
+            <option value="Dr. Shaurya Varma">Dr. Shaurya Varma</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="a-date">Date</label>
+          <input type="date" id="a-date">
+        </div>
+      </div>
+      <div class="field">
+        <label for="a-time">Preferred time</label>
+        <select id="a-time">
+          <option>9:00 AM</option>
+          <option>10:00 AM</option>
+          <option>11:30 AM</option>
+          <option>2:00 PM</option>
+          <option>4:30 PM</option>
+        </select>
+      </div>
+      <button class="btn" onclick="bookAppointment()">Book appointment</button>
+      <div class="result" id="a-result"></div>
+    </div>
+  </section>
+
+  <!-- CONSULT (mocked join, references a booked appointment) -->
+  <section class="panel" id="consult">
+    <div class="eyebrow">Step 5</div>
+    <h2>Consult a doctor</h2>
+    <p class="sub">Join your scheduled video consultation once it's confirmed.</p>
+    <div class="card consult-box">
+      <div class="field" style="text-align:left;">
+        <label for="c-appt-id">Appointment ID</label>
+        <input type="text" id="c-appt-id" placeholder="paste your appointment-id here" autocomplete="off">
+      </div>
+      <p>Your doctor will join at your scheduled time. This demo links out to a placeholder consultation room.</p>
+      <button class="btn" onclick="joinConsult()">Join consultation</button>
+      <div class="result" id="c-result"></div>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="panel" id="reports">
+    <div class="eyebrow">Step 6</div>
+    <h2>Upload a medical report</h2>
+    <p class="sub">Share reports securely with your doctor ahead of your consultation.</p>
+    <div class="card">
+      <div class="field">
+        <label for="r-patient-id">Patient ID</label>
+        <input type="text" id="r-patient-id" placeholder="paste your patient-id here" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Report file</label>
+        <div class="file-drop" id="drop-zone" onclick="document.getElementById('r-file').click()">
+          <span id="drop-label">Click to choose a file (PDF or image)</span>
+        </div>
+        <input type="file" id="r-file" accept=".pdf,image/*" onchange="handleFileChosen()">
+      </div>
+      <button class="btn" onclick="uploadReport()">Upload report</button>
+      <div class="result" id="r-result"></div>
+    </div>
+  </section>
+
+  <!-- PRESCRIPTION -->
+  <section class="panel" id="prescriptions">
+    <div class="eyebrow">Step 7</div>
+    <h2>Digital prescription</h2>
+    <p class="sub">Doctors record the outcome of a consultation here, tied to the appointment.</p>
+    <div class="card">
+      <div class="field">
+        <label for="pr-appt-id">Appointment ID</label>
+        <input type="text" id="pr-appt-id" placeholder="paste your appointment-id here" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="pr-text">Prescription</label>
+        <textarea id="pr-text" placeholder="e.g. Paracetamol 500mg, twice daily for 3 days"></textarea>
+      </div>
+      <button class="btn" onclick="addPrescription()">Save prescription</button>
+      <div class="result" id="pr-result"></div>
+    </div>
+  </section>
+
+</div>
+
+<footer>RAIN · secure telemedicine</footer>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+
+<script>
+  const API_BASE = "https://7jrnuy9s3d.execute-api.ap-south-1.amazonaws.com";
+
+  // Rain animation
+  const rain = document.getElementById('rain');
+  for(let i=0;i<40;i++){
+    const d = document.createElement('div');
+    d.className='drop';
+    d.style.left = Math.random()*100+'vw';
+    d.style.animationDuration = (2+Math.random()*2.5)+'s';
+    d.style.animationDelay = (Math.random()*4)+'s';
+    d.style.height = (30+Math.random()*50)+'px';
+    rain.appendChild(d);
+  }
+
+  // Scroll-to-menu on tap/click (X button or hint text)
+  function scrollToMenu() {
+    document.getElementById('menu').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.getElementById('menuBtn').addEventListener('click', scrollToMenu);
+  document.getElementById('scrollHint').addEventListener('click', scrollToMenu);
+
+  // Theme toggle (dark/light), remembered across visits
+  const themeToggle = document.getElementById('themeToggle');
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeToggle.textContent = '☀️';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+    }
+  }
+  const savedTheme = localStorage.getItem('rain-theme') || 'light';
+  applyTheme(savedTheme);
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('rain-theme', next);
+    applyTheme(next);
+  });
+
+  // Menu -> panel wiring
+  const links = document.querySelectorAll('.menu a[data-target]');
+  const panels = document.querySelectorAll('.panel');
+  links.forEach(link => {
+    link.addEventListener('click', () => {
+      links.forEach(l => l.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      link.classList.add('active');
+      const target = document.getElementById(link.dataset.target);
+      target.classList.add('active');
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      fillSavedIds();
+    });
+  });
+
+  function showResult(id, ok, message, dataObj) {
+    const el = document.getElementById(id);
+    el.className = 'result show ' + (ok ? 'ok' : 'err');
+    let html = message;
+    if (dataObj) html += '<code>' + JSON.stringify(dataObj, null, 2) + '</code>';
+    el.innerHTML = html;
+  }
+
+  async function callApi(path, method, body) {
+    const res = await fetch(API_BASE + path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+  }
+
+  // Remember IDs so the patient never has to copy-paste them again
+  function saveId(key, value) {
+    localStorage.setItem('rain-' + key, value);
+    fillSavedIds();
+  }
+
+  function fillSavedIds() {
+    const patientId = localStorage.getItem('rain-patient-id');
+    const apptId = localStorage.getItem('rain-appointment-id');
+    if (patientId) {
+      ['a-patient-id', 'r-patient-id', 'h-patient-id'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = patientId;
+      });
+    }
+    if (apptId) {
+      ['c-appt-id', 'pr-appt-id'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = apptId;
+      });
+    }
+  }
+  document.addEventListener('DOMContentLoaded', fillSavedIds);
+
+  async function registerPatient() {
+    const name = document.getElementById('p-name').value.trim();
+    const email = document.getElementById('p-email').value.trim();
+    const phone = document.getElementById('p-phone').value.trim();
+    if (!name || !email || !phone) { showResult('p-result', false, 'Please fill in all fields.'); return; }
+    try {
+      const { ok, data } = await callApi('/patients', 'POST', { name, email, phone });
+      if (ok) {
+        const patient = data.patient || data;
+        if (patient['patient-id']) saveId('patient-id', patient['patient-id']);
+        showResult('p-result', true, 'Registered! Your Patient ID is saved automatically for the next steps:', patient);
+      }
+      else showResult('p-result', false, 'Something went wrong registering the patient.', data);
+    } catch (e) { showResult('p-result', false, 'Network error: ' + e.message); }
+  }
+
+  async function bookAppointment() {
+    const patientId = document.getElementById('a-patient-id').value.trim();
+    const doctor = document.getElementById('a-doctor').value;
+    const date = document.getElementById('a-date').value;
+    const time = document.getElementById('a-time').value;
+    if (!patientId || !date) { showResult('a-result', false, 'Please enter your Patient ID and pick a date.'); return; }
+    try {
+      const { ok, data } = await callApi('/appointments', 'POST', { 'patient-id': patientId, 'doctor-name': doctor, date, time });
+      if (ok) {
+        const appointment = data.appointment || data;
+        if (appointment['appointment-id']) saveId('appointment-id', appointment['appointment-id']);
+        showResult('a-result', true, 'Appointment booked! Your Appointment ID is saved automatically for later steps:', appointment);
+      }
+      else showResult('a-result', false, 'Something went wrong booking the appointment.', data);
+    } catch (e) { showResult('a-result', false, 'Network error: ' + e.message); }
+  }
+
+  async function checkSymptoms() {
+    const symptoms = document.getElementById('s-symptoms').value.trim();
+    if (!symptoms) { showResult('s-result', false, 'Please describe your symptoms first.'); return; }
+    try {
+      const { ok, data } = await callApi('/suggest-speciality', 'POST', { symptoms });
+      if (ok) {
+        const specialty = data.suggested_specialty || 'General Medicine';
+        showResult('s-result', true, `Based on what you shared, we'd suggest seeing: <strong>${specialty}</strong>. You can now pick a doctor for this specialty on the booking step.`);
+      } else {
+        showResult('s-result', false, 'Something went wrong checking symptoms.', data);
+      }
+    } catch (e) { showResult('s-result', false, 'Network error: ' + e.message); }
+  }
+
+  async function loadHistory() {
+    const patientId = document.getElementById('h-patient-id').value.trim();
+    const listEl = document.getElementById('h-list');
+    listEl.innerHTML = '';
+    if (!patientId) { showResult('h-result', false, 'Please enter your Patient ID.'); return; }
+    try {
+      const { ok, data } = await callApi('/history', 'POST', { 'patient-id': patientId });
+      if (!ok) { showResult('h-result', false, 'Something went wrong fetching your history.', data); return; }
+
+      const appts = data.appointments || [];
+      const reports = data.reports || [];
+
+      if (appts.length === 0 && reports.length === 0) {
+        showResult('h-result', true, 'No history found yet for this Patient ID.');
+        return;
+      }
+
+      showResult('h-result', true, `Found ${appts.length} appointment(s) and ${reports.length} report(s).`);
+
+      let html = '';
+      if (appts.length > 0) {
+        html += '<div class="eyebrow" style="margin-top:6px;">Appointments</div>';
+        appts.forEach(a => {
+          html += `<div class="card" style="margin-bottom:12px; padding:16px;">
+            <strong>${a['doctor-name'] || 'Doctor'}</strong> — ${a.date || ''} at ${a.time || ''}<br>
+            <span style="color:var(--muted); font-size:13px;">Status: ${a.status || 'scheduled'} · ID: ${a['appointment-id']}</span>
+            ${a.prescription ? `<br><span style="font-size:13.5px;">Prescription: ${a.prescription}</span>` : ''}
+          </div>`;
+        });
+      }
+      if (reports.length > 0) {
+        html += '<div class="eyebrow" style="margin-top:16px;">Reports</div>';
+        reports.forEach(r => {
+          html += `<div class="card" style="margin-bottom:12px; padding:16px;">
+            ${r['file-name'] || 'Report'}<br>
+            <span style="color:var(--muted); font-size:13px;">Uploaded: ${(r['uploaded-at'] || '').split('T')[0]} · ID: ${r['report-id']}</span>
+          </div>`;
+        });
+      }
+      listEl.innerHTML = html;
+    } catch (e) { showResult('h-result', false, 'Network error: ' + e.message); }
+  }
+
+  function joinConsult() {
+    const apptId = document.getElementById('c-appt-id').value.trim();
+    if (!apptId) { showResult('c-result', false, 'Please enter your Appointment ID.'); return; }
+    const roomName = 'rain-telemed-' + apptId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+    const roomUrl = 'https://meet.jit.si/' + roomName;
+    showResult('c-result', true, 'Your consultation room is ready. Opening now — share this link with your doctor: <br><code>' + roomUrl + '</code>');
+    window.open(roomUrl, '_blank');
+  }
+
+  let chosenFile = null;
+  function handleFileChosen() {
+    const input = document.getElementById('r-file');
+    if (input.files.length > 0) {
+      chosenFile = input.files[0];
+      document.getElementById('drop-label').textContent = chosenFile.name;
+      document.getElementById('drop-zone').classList.add('has-file');
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadReport() {
+    const patientId = document.getElementById('r-patient-id').value.trim();
+    if (!patientId || !chosenFile) { showResult('r-result', false, 'Please enter your Patient ID and choose a file.'); return; }
+    try {
+      const base64 = await fileToBase64(chosenFile);
+      const { ok, data } = await callApi('/reports', 'POST', { 'patient-id': patientId, 'file-name': chosenFile.name, 'file-content': base64 });
+      if (ok) showResult('r-result', true, 'Report uploaded successfully:', data.report || data);
+      else showResult('r-result', false, 'Something went wrong uploading the report.', data);
+    } catch (e) { showResult('r-result', false, 'Network error: ' + e.message); }
+  }
+
+  async function addPrescription() {
+    const apptId = document.getElementById('pr-appt-id').value.trim();
+    const text = document.getElementById('pr-text').value.trim();
+    if (!apptId || !text) { showResult('pr-result', false, 'Please enter the Appointment ID and prescription text.'); return; }
+    try {
+      const { ok, data } = await callApi('/prescriptions', 'PUT', { 'appointment-id': apptId, prescription: text });
+      if (ok) showResult('pr-result', true, 'Prescription saved successfully.', data);
+      else showResult('pr-result', false, 'Something went wrong saving the prescription.', data);
+    } catch (e) { showResult('pr-result', false, 'Network error: ' + e.message); }
+  }
+</script>
+
+</body>
+</html>
