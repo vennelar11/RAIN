@@ -1,2 +1,2 @@
 # RAIN
-AWS Hackathon Project
+cloud-based serverless telemedicine platform
